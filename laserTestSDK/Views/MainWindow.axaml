@@ -1,0 +1,61 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:laserTestSDK.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" Width="600" Height="600"
+        x:Class="laserTestSDK.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="laserTestSDK">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+    <StackPanel Margin="5">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+                <RowDefinition></RowDefinition>
+                <RowDefinition></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Spacing="5">
+                <Button Content="Загрузить картинку" Command="{Binding LoadPictureCommand}"></Button>
+                <Image Width="250" Height="200" Stretch="Fill"></Image>
+            </StackPanel>
+            <StackPanel Grid.Column="0" Grid.Row="1" Spacing="10" Margin="5" HorizontalAlignment="Center">
+                <Label Content="Параметры лазера" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBox Watermark="Скорость гравировки" Text="{Binding MarkSpeed}" />
+                    <Label Content="мм/с"></Label>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBox Watermark="Мощность лазера" Text="{Binding MarkPower}" />
+                    <Label Content="%"></Label>
+                </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="5" Spacing="5">
+                <Label Content="Ввод текста" />
+                <TextBox Height="200" Watermark="Каждая строка - новая позиция на изображении"
+                         Text="{Binding TextLines}" />
+                <Button Content="Ввод" Command="{Binding InsertTextCommand}" />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="2" Spacing="5" HorizontalAlignment="Center">
+                <Label Content="Маркировка"></Label>
+                <Button Content="Красная обводка" Width="140" Command="{Binding RedLightCommand}" />
+                <Button Content="Маркировка" Width="140" Command="{Binding MarkingCommand}" />
+                <Button Content="Стоп" Width="140" Command="{Binding StopMarkingCommand}" />
+            </StackPanel>
+        </Grid>
+
+    </StackPanel>
+
+</Window>
