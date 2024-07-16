@@ -129,3 +129,8 @@ C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\obj\Debug\net8.0\laserT
 C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\obj\Debug\net8.0\laserTes.C5434278.Up2Date
 C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\obj\Debug\net8.0\laserTestSDK.genruntimeconfig.cache
 C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\obj\Debug\net8.0\ref\laserTestSDK.dll
+C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\obj\Debug\net8.0\laserTestSDK.sourcelink.json
+C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\bin\Debug\net8.0\ColorTextBlock.Avalonia.dll
+C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\bin\Debug\net8.0\DialogHost.Avalonia.dll
+C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\bin\Debug\net8.0\Markdown.Avalonia.dll
+C:\Users\Mikhail\RiderProjects\laserTestSDK\laserTestSDK\bin\Debug\net8.0\MsBox.Avalonia.dll
