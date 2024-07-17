@@ -45,6 +45,7 @@
                     <TextBox Watermark="Мощность лазера" Text="{Binding MarkPower}" />
                     <Label Content="%"></Label>
                 </StackPanel>
+                <TextBox Watermark="Точность заливки" Text="{Binding FillLineSpacing}"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="5" Spacing="5">
                 <Label Content="Ввод текста" />

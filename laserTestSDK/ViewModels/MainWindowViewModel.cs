@@ -38,6 +38,7 @@ public class MainWindowViewModel : ViewModelBase
     private string _fontSize = "5";
     private bool _fill;
     private Bitmap _image;
+    private double _fillLineSpacing = 0.01;
 
     public int MarkSpeed
     {
@@ -81,7 +82,7 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _fill, value);
     }
 
-public Avalonia.Media.Imaging.Bitmap Image
+    public Avalonia.Media.Imaging.Bitmap Image
     {
         get => _image;
         set => this.RaiseAndSetIfChanged(ref _image, value);
@@ -97,6 +98,12 @@ public Avalonia.Media.Imaging.Bitmap Image
     {
         get => _currentDevId;
         set => this.RaiseAndSetIfChanged(ref _currentDevId, value);
+    }
+
+    public double FillLineSpacing
+    {
+        get => _fillLineSpacing;
+        set => this.RaiseAndSetIfChanged(ref _fillLineSpacing, value);
     }
 
     public MainWindowViewModel()
@@ -134,7 +141,7 @@ public Avalonia.Media.Imaging.Bitmap Image
                 //先打填充线,后打外部轮廓
                 para.m_bOutLineFirst = false;
                 //填充线间距
-                para.m_arrPar[0].m_fLineSpacing = 0.01;
+                para.m_arrPar[0].m_fLineSpacing = FillLineSpacing;
                 // *******参数设置********
 
                 if (func_setFillParam != null)
@@ -145,7 +152,8 @@ public Avalonia.Media.Imaging.Bitmap Image
                 if (func != null)
                 {
                     String szEntName = ("Вставленный текст");
-                    BslErrCode iRes = func(strFileName, GravingText, szEntName, Convert.ToDouble(PosX), Convert.ToDouble(PosY), 0, 0, 0, 0, Fill, Convert.ToDouble(FontSize), "Arial");
+                    BslErrCode iRes = func(strFileName, GravingText, szEntName, Convert.ToDouble(PosX),
+                        Convert.ToDouble(PosY), 0, 0, 0, 0, Fill, Convert.ToDouble(FontSize), "Arial");
                     if (iRes == BslErrCode.BSL_ERR_SUCCESS)
                     {
                         // ShowShapeList(strFileName);
@@ -215,6 +223,12 @@ public Avalonia.Media.Imaging.Bitmap Image
                     //灰掉标刻按钮，避免重复点击
                     // button17.Enabled = false;
                     // Threads = 1;
+                    // BSL_SetPenParam func_param =
+                    //     (BSL_SetPenParam)m_hMarkDll.GetFunctionAddress("SetPenParam", typeof(BSL_SetPenParam));
+                    // if (func_param != null)
+                    // {
+                    //     func_param("empty.orzx", 255, 1, 200, 70, 1, 30, 10, 1, 1, 1,1, 1, 1, 1, 1, true, 1, 1);
+                    // }
                     object[] param = new object[2];
                     param[0] = m_hMarkDll;
                     param[1] = DevList[0];
@@ -231,7 +245,9 @@ public Avalonia.Media.Imaging.Bitmap Image
         {
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
-                BSL_DisplayDevCfgDlg func = (BSL_DisplayDevCfgDlg)m_hMarkDll.GetFunctionAddress("DisplayDevCfgDlg", typeof(BSL_DisplayDevCfgDlg));
+                BSL_DisplayDevCfgDlg func =
+                    (BSL_DisplayDevCfgDlg)m_hMarkDll.GetFunctionAddress("DisplayDevCfgDlg",
+                        typeof(BSL_DisplayDevCfgDlg));
                 if (func != null)
                 {
                     BslErrCode iRes = func(DevList[0]);
@@ -243,7 +259,9 @@ public Avalonia.Media.Imaging.Bitmap Image
             string strFileName = "empty.orzx";
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
-                BSL_DeleteAllEntityByName func = (BSL_DeleteAllEntityByName)m_hMarkDll.GetFunctionAddress("DeleteAllEntityByName", typeof(BSL_DeleteAllEntityByName));
+                BSL_DeleteAllEntityByName func =
+                    (BSL_DeleteAllEntityByName)m_hMarkDll.GetFunctionAddress("DeleteAllEntityByName",
+                        typeof(BSL_DeleteAllEntityByName));
                 if (func != null)
                 {
                     BslErrCode iRes = func(strFileName);
@@ -307,6 +325,7 @@ public Avalonia.Media.Imaging.Bitmap Image
                     Console.WriteLine("load file to device");
                 }
             }
+            
         }
 
         // var topLevel = TopLevel.GetTopLevel(new MainWindow());
@@ -507,6 +526,42 @@ public Avalonia.Media.Imaging.Bitmap Image
             else
             {
                 Console.WriteLine("Error");
+            }
+        }
+    }
+
+    private void SetFillParams()
+    {
+        if (m_hMarkDll.hLib != IntPtr.Zero)
+        {
+            BSL_SetFillParam func_setFillParam =
+                (BSL_SetFillParam)m_hMarkDll.GetFunctionAddress("SetFillParam", typeof(BSL_SetFillParam));
+
+// *******Настройка параметров********
+            BSL_FillPara para = new BSL_FillPara();
+            para.init();
+//вкл
+            para.m_arrPar[0].m_bEnable = true;
+//弓形填充
+            para.m_arrPar[0].m_nFillType = BSL_FILLTYPE.BSL_FT_SINGLE_LINE;
+//取异或集
+            para.m_arrPar[0].m_nExecuteType = 0;
+//整体计算,此时m_nExecuteType才有效
+            para.m_arrPar[0].m_bWholeConsider = true;
+//绕边走一次 始终在填充线后标刻 , FALSE=不绕边走
+            para.m_arrPar[0].m_bAlongBorder = false;
+// перекрестная заливка
+            para.m_arrPar[0].m_bCrossFill = false;
+//先打填充线,后打外部轮廓
+            para.m_bOutLineFirst = false;
+//это точность заливки
+            para.m_arrPar[0].m_fLineSpacing = Convert.ToDouble(FillLineSpacing);
+
+// *******参数设置********
+
+            if (func_setFillParam != null)
+            {
+                func_setFillParam(ref para);
             }
         }
     }
