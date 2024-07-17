@@ -48,15 +48,21 @@
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="1" Margin="5" Spacing="5">
                 <Label Content="Ввод текста" />
-                <TextBox Height="200" Watermark="Каждая строка - новая позиция на изображении"
-                         Text="{Binding TextLines}" />
+                <TextBox Watermark="Введите текст"
+                         Text="{Binding GravingText}" />
+                <TextBox Watermark="Ось X" Text="{Binding PosX}"></TextBox>
+                <TextBox Watermark="Ось Y" Text="{Binding PosY}"></TextBox>
+                <TextBox Watermark="Размер шрифта" Text="{Binding FontSize}"/>
+                <CheckBox Content="Заливка" IsChecked="{Binding Fill}"></CheckBox>
                 <Button Content="Ввод" Command="{Binding InsertTextCommand}" />
+                <Button Content="Очистить поле" Command="{Binding ClearAllCommand}" />
             </StackPanel>
             <StackPanel Grid.Row="1" Grid.Column="2" Spacing="5" HorizontalAlignment="Center">
                 <Label Content="Маркировка"></Label>
                 <Button Content="Красная обводка" Width="140" Command="{Binding RedLightCommand}" />
                 <Button Content="Маркировка" Width="140" Command="{Binding MarkingCommand}" />
                 <Button Content="Стоп" Width="140" Command="{Binding StopMarkingCommand}" />
+                <Button Content="Конфиг" Width="140" Command="{Binding CfgCommand}" />
             </StackPanel>
         </Grid>
 

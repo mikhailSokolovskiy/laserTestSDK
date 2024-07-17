@@ -22,6 +22,8 @@ public class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> InsertTextCommand { get; set; }
     public ReactiveCommand<Unit, Unit> LoadPictureCommand { get; set; }
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; set; }
+    public ReactiveCommand<Unit, Unit> CfgCommand { get; set; }
+    public ReactiveCommand<Unit, Unit> ClearAllCommand { get; set; }
 
 
     private DllInvoke m_hMarkDll; //markdll对象
@@ -30,7 +32,11 @@ public class MainWindowViewModel : ViewModelBase
     private int _currentDevId;
     private int _markSpeed = 1000;
     private int _markPower = 70;
-    private string _textLines = "";
+    private string _gravingText = "";
+    private string _posX = "0";
+    private string _posY = "0";
+    private string _fontSize = "5";
+    private bool _fill;
     private Bitmap _image;
 
     public int MarkSpeed
@@ -45,13 +51,37 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _markPower, value);
     }
 
-    public string TextLines
+    public string GravingText
     {
-        get => _textLines;
-        set => this.RaiseAndSetIfChanged(ref _textLines, value);
+        get => _gravingText;
+        set => this.RaiseAndSetIfChanged(ref _gravingText, value);
     }
 
-    public Avalonia.Media.Imaging.Bitmap Image
+    public string PosX
+    {
+        get => _posX;
+        set => this.RaiseAndSetIfChanged(ref _posX, value);
+    }
+
+    public string PosY
+    {
+        get => _posY;
+        set => this.RaiseAndSetIfChanged(ref _posY, value);
+    }
+
+    public string FontSize
+    {
+        get => _fontSize;
+        set => this.RaiseAndSetIfChanged(ref _fontSize, value);
+    }
+
+    public bool Fill
+    {
+        get => _fill;
+        set => this.RaiseAndSetIfChanged(ref _fill, value);
+    }
+
+public Avalonia.Media.Imaging.Bitmap Image
     {
         get => _image;
         set => this.RaiseAndSetIfChanged(ref _image, value);
@@ -74,11 +104,60 @@ public class MainWindowViewModel : ViewModelBase
         DevList = new List<string>();
         CheckSdk();
         GetDeviceList();
+        LoadImage();
         LoadPictureCommand = ReactiveCommand.Create(() => { LoadImage(); });
 
         InsertTextCommand = ReactiveCommand.Create(() =>
         {
-            
+            string strFileName = "empty.orzx";
+            if (m_hMarkDll.hLib != IntPtr.Zero)
+            {
+                BSL_AddTextToFileEx func =
+                    (BSL_AddTextToFileEx)m_hMarkDll.GetFunctionAddress("AddTextToFileEx", typeof(BSL_AddTextToFileEx));
+                BSL_SetFillParam func_setFillParam =
+                    (BSL_SetFillParam)m_hMarkDll.GetFunctionAddress("SetFillParam", typeof(BSL_SetFillParam));
+                // *******参数设置********
+                BSL_FillPara para = new BSL_FillPara();
+                para.init();
+                //使能
+                para.m_arrPar[0].m_bEnable = true;
+                //弓形填充
+                para.m_arrPar[0].m_nFillType = BSL_FILLTYPE.BSL_FT_SINGLE_LINE;
+                //取异或集
+                para.m_arrPar[0].m_nExecuteType = 0;
+                //整体计算,此时m_nExecuteType才有效
+                para.m_arrPar[0].m_bWholeConsider = true;
+                //绕边走一次 始终在填充线后标刻 , FALSE=不绕边走
+                para.m_arrPar[0].m_bAlongBorder = false;
+                // 交叉填充
+                para.m_arrPar[0].m_bCrossFill = true;
+                //先打填充线,后打外部轮廓
+                para.m_bOutLineFirst = false;
+                //填充线间距
+                para.m_arrPar[0].m_fLineSpacing = 0.01;
+                // *******参数设置********
+
+                if (func_setFillParam != null)
+                {
+                    func_setFillParam(ref para);
+                }
+
+                if (func != null)
+                {
+                    String szEntName = ("Вставленный текст");
+                    BslErrCode iRes = func(strFileName, GravingText, szEntName, Convert.ToDouble(PosX), Convert.ToDouble(PosY), 0, 0, 0, 0, Fill, Convert.ToDouble(FontSize), "Arial");
+                    if (iRes == BslErrCode.BSL_ERR_SUCCESS)
+                    {
+                        // ShowShapeList(strFileName);
+                        // PreViewFile(strFileName);
+                        Console.WriteLine("success add text");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Эта функция не была найдена в SDK");
+                }
+            }
         });
 
         RedLightCommand = ReactiveCommand.Create(() =>
@@ -148,6 +227,47 @@ public class MainWindowViewModel : ViewModelBase
         StopMarkingCommand = ReactiveCommand.Create(ThreadStopDev);
 
         RefreshCommand = ReactiveCommand.Create(GetDeviceList);
+        CfgCommand = ReactiveCommand.Create(() =>
+        {
+            if (m_hMarkDll.hLib != IntPtr.Zero)
+            {
+                BSL_DisplayDevCfgDlg func = (BSL_DisplayDevCfgDlg)m_hMarkDll.GetFunctionAddress("DisplayDevCfgDlg", typeof(BSL_DisplayDevCfgDlg));
+                if (func != null)
+                {
+                    BslErrCode iRes = func(DevList[0]);
+                }
+            }
+        });
+        ClearAllCommand = ReactiveCommand.Create(() =>
+        {
+            string strFileName = "empty.orzx";
+            if (m_hMarkDll.hLib != IntPtr.Zero)
+            {
+                BSL_DeleteAllEntityByName func = (BSL_DeleteAllEntityByName)m_hMarkDll.GetFunctionAddress("DeleteAllEntityByName", typeof(BSL_DeleteAllEntityByName));
+                if (func != null)
+                {
+                    BslErrCode iRes = func(strFileName);
+                    if (iRes == BslErrCode.BSL_ERR_SUCCESS)
+                    {
+                        // ShowShapeList(strFileName);
+                        // PreViewFile(strFileName);
+                        Console.WriteLine("clear success");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Не удалось очистить поле");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Функция не найдена");
+                }
+            }
+            else
+            {
+                Console.WriteLine("SDK not found");
+            }
+        });
     }
 
 
@@ -165,7 +285,7 @@ public class MainWindowViewModel : ViewModelBase
 
     private async void LoadImage()
     {
-        string strFileName = "text.orzx";
+        string strFileName = "empty.orzx";
         if (m_hMarkDll.hLib != IntPtr.Zero)
         {
             BSL_LoadDataFile func =
@@ -188,36 +308,34 @@ public class MainWindowViewModel : ViewModelBase
                 }
             }
         }
-        
-        var topLevel = TopLevel.GetTopLevel(new MainWindow());
-        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = "Открыть изображение",
-            AllowMultiple = false,
-            FileTypeFilter = new[] { Img },
-            SuggestedStartLocation =
-                await topLevel.StorageProvider.TryGetFolderFromPathAsync(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop))
-        });
-        if (files.Count >= 1 && m_hMarkDll.hLib != IntPtr.Zero)
-        {
-            var file = files[0];
-            await using var stream = await file.OpenReadAsync();
-            Image = new Bitmap(stream);
-            BSL_AddBmpToFile func = (BSL_AddBmpToFile)m_hMarkDll.GetFunctionAddress("AddBmpToFile", typeof(BSL_AddBmpToFile));
-            if (func != null)
-            {
-                BslErrCode iRes = func(strFileName, file.Name, "Импорт изображения", 100, 100, 0, 0, 0, 0);
-                if (iRes == BslErrCode.BSL_ERR_SUCCESS)
-                {
-                    // ShowShapeList(strFileName);
-                    // PreViewFile(strFileName);
-                    Console.WriteLine("complete add picture to Preview file");
-                }
-            }
-        }
-        
-        
+
+        // var topLevel = TopLevel.GetTopLevel(new MainWindow());
+        // var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        // {
+        //     Title = "Открыть изображение",
+        //     AllowMultiple = false,
+        //     FileTypeFilter = new[] { Img },
+        //     SuggestedStartLocation =
+        //         await topLevel.StorageProvider.TryGetFolderFromPathAsync(
+        //             Environment.GetFolderPath(Environment.SpecialFolder.Desktop))
+        // });
+        // if (files.Count >= 1 && m_hMarkDll.hLib != IntPtr.Zero)
+        // {
+        //     var file = files[0];
+        //     await using var stream = await file.OpenReadAsync();
+        //     Image = new Bitmap(stream);
+        //     BSL_AddBmpToFile func = (BSL_AddBmpToFile)m_hMarkDll.GetFunctionAddress("AddBmpToFile", typeof(BSL_AddBmpToFile));
+        //     if (func != null)
+        //     {
+        //         BslErrCode iRes = func(file.Name, strFileName, "Импорт изображения", 100, 100, 0, 0, 0, 0);
+        //         if (iRes == BslErrCode.BSL_ERR_SUCCESS)
+        //         {
+        //             // ShowShapeList(strFileName);
+        //             // PreViewFile(strFileName);
+        //             Console.WriteLine("complete add picture to Preview file");
+        //         }
+        //     }
+        // }
     }
 
     private void CheckSdk()
