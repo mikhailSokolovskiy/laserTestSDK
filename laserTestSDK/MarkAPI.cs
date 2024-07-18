@@ -682,24 +682,24 @@ namespace MarkAPI
     //设置指定笔号对应的加工参数,文件名称设置为NULL表示设置全局的笔号，影响出点光，标刻直线等。
     [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
     public delegate BslErrCode BSL_SetPenParam([MarshalAs(UnmanagedType.LPWStr)] string strFileName, //文件名称
-            UInt32 nPenNo,                  //要设置的笔号(0-255)	
-            int nMarkLoop,              //加工次数
-            double dMarkSpeed,          //标刻次数mm/s
-            double dPowerRatio,         //功率百分比(0-100%)	
-            double dCurrent,            //电流A
-            float fFreq,                  //频率KHZ
-            float fQPulseWidth,        //Q脉冲宽度us	
-            int nStartTC,               //开始延时us
-            int nLaserOffTC,            //激光关闭延时us
-            int nEndTC,                 //结束延时us
-            int nPolyTC,                //拐角延时us
-            double dJumpSpeed,          //跳转速度mm/s
-            int nJumpPosTC,             //跳转位置延时us 
-            int nJumpDistTC,            //跳转距离延时us	
-            double dEndComp,            //末点补偿mm				
-            bool bPulsePointMode,       //脉冲点模式 
-            int nPulseNum,              //脉冲点数目
-            float POINTTIME);           // 打点时间
+            UInt32 nPenNo,                  //要设置的笔号(0-255)	0
+            int nMarkLoop,              //加工次数                1
+            double dMarkSpeed,          //标刻次数mm/s            1000
+            double dPowerRatio,         //功率百分比(0-100%)	     75
+            double dCurrent,            //电流A                   1
+            float fFreq,                  //频率KHZ               30
+            float fQPulseWidth,        //Q脉冲宽度us	             10
+            int nStartTC,               //开始延时us               1
+            int nLaserOffTC,            //激光关闭延时us            100
+            int nEndTC,                 //结束延时us                50
+            int nPolyTC,                //拐角延时us                80
+            double dJumpSpeed,          //跳转速度mm/s              4000
+            int nJumpPosTC,             //跳转位置延时us             500
+            int nJumpDistTC,            //跳转距离延时us	           100
+            double dEndComp,            //末点补偿mm				   0.2
+            bool bPulsePointMode,       //脉冲点模式                 true
+            int nPulseNum,              //脉冲点数目                 0
+            float POINTTIME);           // 打点时间                 100
 
     //得到指定笔号对应的加工参数,文件名称设置为NULL表示获取全局的笔号
     [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl, CharSet = CharSet.Auto)]

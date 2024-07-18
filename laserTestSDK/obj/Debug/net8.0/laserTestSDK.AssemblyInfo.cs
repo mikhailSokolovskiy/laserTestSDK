@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("laserTestSDK")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fd98890c3ae54f88792572eec3eefc18a7ad3e78")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d0c2fa6b947494d411212638fc2c54cd9969983")]
 [assembly: System.Reflection.AssemblyProductAttribute("laserTestSDK")]
 [assembly: System.Reflection.AssemblyTitleAttribute("laserTestSDK")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

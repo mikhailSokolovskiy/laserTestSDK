@@ -106,6 +106,8 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _fillLineSpacing, value);
     }
 
+    string strFileName = "empty.orzx";
+
     public MainWindowViewModel()
     {
         DevList = new List<string>();
@@ -116,7 +118,6 @@ public class MainWindowViewModel : ViewModelBase
 
         InsertTextCommand = ReactiveCommand.Create(() =>
         {
-            string strFileName = "empty.orzx";
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
                 BSL_AddTextToFileEx func =
@@ -143,7 +144,8 @@ public class MainWindowViewModel : ViewModelBase
                 //填充线间距
                 para.m_arrPar[0].m_fLineSpacing = FillLineSpacing;
                 // *******参数设置********
-
+                
+                
                 if (func_setFillParam != null)
                 {
                     func_setFillParam(ref para);
@@ -159,6 +161,10 @@ public class MainWindowViewModel : ViewModelBase
                         // ShowShapeList(strFileName);
                         // PreViewFile(strFileName);
                         Console.WriteLine("success add text");
+                    }
+                    else
+                    {
+                        Console.WriteLine("faild insert text");
                     }
                 }
                 else
@@ -223,12 +229,8 @@ public class MainWindowViewModel : ViewModelBase
                     //灰掉标刻按钮，避免重复点击
                     // button17.Enabled = false;
                     // Threads = 1;
-                    // BSL_SetPenParam func_param =
-                    //     (BSL_SetPenParam)m_hMarkDll.GetFunctionAddress("SetPenParam", typeof(BSL_SetPenParam));
-                    // if (func_param != null)
-                    // {
-                    //     func_param("empty.orzx", 255, 1, 200, 70, 1, 30, 10, 1, 1, 1,1, 1, 1, 1, 1, true, 1, 1);
-                    // }
+
+
                     object[] param = new object[2];
                     param[0] = m_hMarkDll;
                     param[1] = DevList[0];
@@ -256,7 +258,6 @@ public class MainWindowViewModel : ViewModelBase
         });
         ClearAllCommand = ReactiveCommand.Create(() =>
         {
-            string strFileName = "empty.orzx";
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
                 BSL_DeleteAllEntityByName func =
@@ -303,7 +304,6 @@ public class MainWindowViewModel : ViewModelBase
 
     private async void LoadImage()
     {
-        string strFileName = "empty.orzx";
         if (m_hMarkDll.hLib != IntPtr.Zero)
         {
             BSL_LoadDataFile func =
@@ -325,7 +325,6 @@ public class MainWindowViewModel : ViewModelBase
                     Console.WriteLine("load file to device");
                 }
             }
-            
         }
 
         // var topLevel = TopLevel.GetTopLevel(new MainWindow());
@@ -502,10 +501,23 @@ public class MainWindowViewModel : ViewModelBase
 
     private void ThreadMarkCard(object? obj)
     {
+        ThreadStopDev();
         object[] param = (object[])obj;
         DllInvoke hMarkDll = (DllInvoke)param[0];
         String strDevId = param[1].ToString();
-
+        //параметры маркировки (скорость мощность и тд)
+        BSL_SetPenParam2 func_param =
+            (BSL_SetPenParam2)m_hMarkDll.GetFunctionAddress("SetPenParam", typeof(BSL_SetPenParam2));
+        if (func_param != null)
+        {
+            BslErrCode iRes = func_param(strFileName, 0, 1, MarkSpeed, MarkPower, 1, 30, 1,10, 0, 100, 50, 80, 4000, 500, 100,
+                0.5, true, 0, 1);
+            if (iRes == BslErrCode.BSL_ERR_SUCCESS)
+            {
+                Console.WriteLine("params are set");   
+            }
+        }
+        
         DateTime beforDT = System.DateTime.Now;
         BSL_MarkByDeviceId func =
             (BSL_MarkByDeviceId)m_hMarkDll.GetFunctionAddress("MarkByDeviceId", typeof(BSL_MarkByDeviceId));
@@ -529,40 +541,5 @@ public class MainWindowViewModel : ViewModelBase
             }
         }
     }
-
-    private void SetFillParams()
-    {
-        if (m_hMarkDll.hLib != IntPtr.Zero)
-        {
-            BSL_SetFillParam func_setFillParam =
-                (BSL_SetFillParam)m_hMarkDll.GetFunctionAddress("SetFillParam", typeof(BSL_SetFillParam));
-
-// *******Настройка параметров********
-            BSL_FillPara para = new BSL_FillPara();
-            para.init();
-//вкл
-            para.m_arrPar[0].m_bEnable = true;
-//弓形填充
-            para.m_arrPar[0].m_nFillType = BSL_FILLTYPE.BSL_FT_SINGLE_LINE;
-//取异或集
-            para.m_arrPar[0].m_nExecuteType = 0;
-//整体计算,此时m_nExecuteType才有效
-            para.m_arrPar[0].m_bWholeConsider = true;
-//绕边走一次 始终在填充线后标刻 , FALSE=不绕边走
-            para.m_arrPar[0].m_bAlongBorder = false;
-// перекрестная заливка
-            para.m_arrPar[0].m_bCrossFill = false;
-//先打填充线,后打外部轮廓
-            para.m_bOutLineFirst = false;
-//это точность заливки
-            para.m_arrPar[0].m_fLineSpacing = Convert.ToDouble(FillLineSpacing);
-
-// *******参数设置********
-
-            if (func_setFillParam != null)
-            {
-                func_setFillParam(ref para);
-            }
-        }
-    }
+    
 }
