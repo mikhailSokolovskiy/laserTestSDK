@@ -1,21 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reactive;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
-using laserTestSDK.Views;
 using MarkAPI;
 using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using ReactiveUI;
+using System.IO;
+using SkiaSharp;
 
 namespace laserTestSDK.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
+    [DllImport("GDI32.dll")]
+    public static extern bool DeleteObject(IntPtr objectHandle);
+
+    [DllImport("GDI32.dll", SetLastError = true)]
+    public static extern bool GetObject(IntPtr hObject, int nSize, ref BITMAP bm);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct BITMAP
+    {
+        public int bmType;
+        public int bmWidth;
+        public int bmHeight;
+        public int bmWidthBytes;
+        public ushort bmPlanes;
+        public ushort bmBitsPixel;
+        public IntPtr bmBits;
+    }
     public ReactiveCommand<Unit, Unit> RedLightCommand { get; set; }
     public ReactiveCommand<Unit, Unit> MarkingCommand { get; set; }
     public ReactiveCommand<Unit, Unit> StopMarkingCommand { get; set; }
@@ -114,6 +133,7 @@ public class MainWindowViewModel : ViewModelBase
         CheckSdk();
         GetDeviceList();
         LoadImage();
+
         LoadPictureCommand = ReactiveCommand.Create(() => { LoadImage(); });
 
         InsertTextCommand = ReactiveCommand.Create(() =>
@@ -144,8 +164,8 @@ public class MainWindowViewModel : ViewModelBase
                 //填充线间距
                 para.m_arrPar[0].m_fLineSpacing = FillLineSpacing;
                 // *******参数设置********
-                
-                
+
+
                 if (func_setFillParam != null)
                 {
                     func_setFillParam(ref para);
@@ -161,6 +181,7 @@ public class MainWindowViewModel : ViewModelBase
                         // ShowShapeList(strFileName);
                         // PreViewFile(strFileName);
                         Console.WriteLine("success add text");
+                        PreviewFile(strFileName);
                     }
                     else
                     {
@@ -271,6 +292,7 @@ public class MainWindowViewModel : ViewModelBase
                         // ShowShapeList(strFileName);
                         // PreViewFile(strFileName);
                         Console.WriteLine("clear success");
+                        PreviewFile(strFileName);
                     }
                     else
                     {
@@ -325,6 +347,7 @@ public class MainWindowViewModel : ViewModelBase
                     Console.WriteLine("load file to device");
                 }
             }
+            PreviewFile(strFileName);
         }
 
         // var topLevel = TopLevel.GetTopLevel(new MainWindow());
@@ -414,6 +437,7 @@ public class MainWindowViewModel : ViewModelBase
 
     private void ThreadRedLight(object DevId)
     {
+        ThreadStopDev();
         object[] param = (object[])DevId;
         DllInvoke hMarkDll = (DllInvoke)param[0];
         String strDevId = param[1].ToString();
@@ -510,14 +534,15 @@ public class MainWindowViewModel : ViewModelBase
             (BSL_SetPenParam2)m_hMarkDll.GetFunctionAddress("SetPenParam", typeof(BSL_SetPenParam2));
         if (func_param != null)
         {
-            BslErrCode iRes = func_param(strFileName, 0, 1, MarkSpeed, MarkPower, 1, 30, 1,10, 0, 100, 50, 80, 4000, 500, 100,
+            BslErrCode iRes = func_param(strFileName, 0, 1, MarkSpeed, MarkPower, 1, 30, 1, 10, 0, 100, 50, 80, 4000,
+                500, 100,
                 0.5, true, 0, 1);
             if (iRes == BslErrCode.BSL_ERR_SUCCESS)
             {
-                Console.WriteLine("params are set");   
+                Console.WriteLine("params are set");
             }
         }
-        
+
         DateTime beforDT = System.DateTime.Now;
         BSL_MarkByDeviceId func =
             (BSL_MarkByDeviceId)m_hMarkDll.GetFunctionAddress("MarkByDeviceId", typeof(BSL_MarkByDeviceId));
@@ -541,5 +566,56 @@ public class MainWindowViewModel : ViewModelBase
             }
         }
     }
-    
+
+    private void PreviewFile(string strFileName)
+    {
+        BSL_DrawFileInImgEx func =
+            (BSL_DrawFileInImgEx)m_hMarkDll.GetFunctionAddress("DrawFileInImgEx", typeof(BSL_DrawFileInImgEx));
+        if (func != null)
+        {
+            if (Image != null)
+            {
+                Image.Dispose();
+            }
+
+            IntPtr hBitmap = func(strFileName, 400, 400, 2, true, true, 10, true);
+            if (hBitmap != IntPtr.Zero)
+            {
+                try
+                {
+                    var bitmap = ConvertHBitmapToBitmap(hBitmap);
+                    Image = bitmap;
+                }
+                finally
+                {
+                    DeleteObject(hBitmap);
+                }
+            }
+            else
+            {
+            }
+        }
+    }
+
+    private Bitmap ConvertHBitmapToBitmap(IntPtr hBitmap)
+    {
+        BITMAP bm = new BITMAP();
+        GetObject(hBitmap, Marshal.SizeOf(bm), ref bm);
+
+        using (var skBitmap = new SKBitmap())
+        {
+            var info = new SKImageInfo(bm.bmWidth, bm.bmHeight, SKColorType.Bgra8888, SKAlphaType.Premul);
+            skBitmap.InstallPixels(info, bm.bmBits, bm.bmWidthBytes);
+
+            using (var image = SKImage.FromBitmap(skBitmap))
+            {
+                // Установка максимального качества при сохранении PNG
+                using (var data = image.Encode(SKEncodedImageFormat.Png, 100))
+                using (var memoryStream = new MemoryStream(data.ToArray()))
+                {
+                    return new Bitmap(memoryStream);
+                }
+            }
+        }
+    }
 }
