@@ -3,6 +3,7 @@
   <component name="AvaloniaProject">
     <option name="projectPerEditor">
       <map>
+        <entry key="laserTestSDK/App.axaml" value="laserTestSDK/laserTestSDK.csproj" />
         <entry key="laserTestSDK/Views/MainWindow.axaml" value="laserTestSDK/laserTestSDK.csproj" />
       </map>
     </option>

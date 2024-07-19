@@ -12,6 +12,11 @@ using MsBox.Avalonia;
 using MsBox.Avalonia.Enums;
 using ReactiveUI;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using laserTestSDK.Views;
+using MsBox.Avalonia.Dto;
+using MsBox.Avalonia.Models;
 using SkiaSharp;
 
 namespace laserTestSDK.ViewModels;
@@ -35,6 +40,7 @@ public class MainWindowViewModel : ViewModelBase
         public ushort bmBitsPixel;
         public IntPtr bmBits;
     }
+
     public ReactiveCommand<Unit, Unit> RedLightCommand { get; set; }
     public ReactiveCommand<Unit, Unit> MarkingCommand { get; set; }
     public ReactiveCommand<Unit, Unit> StopMarkingCommand { get; set; }
@@ -58,6 +64,8 @@ public class MainWindowViewModel : ViewModelBase
     private bool _fill;
     private Bitmap _image;
     private double _fillLineSpacing = 0.01;
+    private bool _redEnable = true;
+    private bool _markEnable = true;
 
     public int MarkSpeed
     {
@@ -125,8 +133,20 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _fillLineSpacing, value);
     }
 
-    string strFileName = "empty.orzx";
+    public bool RedEnable
+    {
+        get => _redEnable;
+        set => this.RaiseAndSetIfChanged(ref _redEnable, value);
+    }
 
+    public bool MarkEnable
+    {
+        get => _markEnable;
+        set => this.RaiseAndSetIfChanged(ref _markEnable, value);
+    }
+    
+    private string StrFileName = "empty.orzx";
+    
     public MainWindowViewModel()
     {
         DevList = new List<string>();
@@ -136,8 +156,10 @@ public class MainWindowViewModel : ViewModelBase
 
         LoadPictureCommand = ReactiveCommand.Create(() => { LoadImage(); });
 
-        InsertTextCommand = ReactiveCommand.Create(() =>
+        InsertTextCommand = ReactiveCommand.Create( () =>
         {
+            ThreadStopDev();
+            Thread.Sleep(500);
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
                 BSL_AddTextToFileEx func =
@@ -174,14 +196,14 @@ public class MainWindowViewModel : ViewModelBase
                 if (func != null)
                 {
                     String szEntName = ("Вставленный текст");
-                    BslErrCode iRes = func(strFileName, GravingText, szEntName, Convert.ToDouble(PosX),
+                    BslErrCode iRes = func(StrFileName, GravingText, szEntName, Convert.ToDouble(PosX),
                         Convert.ToDouble(PosY), 0, 0, 0, 0, Fill, Convert.ToDouble(FontSize), "Arial");
                     if (iRes == BslErrCode.BSL_ERR_SUCCESS)
                     {
                         // ShowShapeList(strFileName);
                         // PreViewFile(strFileName);
                         Console.WriteLine("success add text");
-                        PreviewFile(strFileName);
+                        PreviewFile(StrFileName);
                     }
                     else
                     {
@@ -210,7 +232,6 @@ public class MainWindowViewModel : ViewModelBase
 
                     //灰掉红光按钮，避免重复点击
                     // button19.Enabled = false;
-
                     object[] param = new object[3];
                     param[0] = m_hMarkDll;
                     param[1] = DevList[0];
@@ -279,6 +300,8 @@ public class MainWindowViewModel : ViewModelBase
         });
         ClearAllCommand = ReactiveCommand.Create(() =>
         {
+            ThreadStopDev();
+            Thread.Sleep(500);
             if (m_hMarkDll.hLib != IntPtr.Zero)
             {
                 BSL_DeleteAllEntityByName func =
@@ -286,13 +309,13 @@ public class MainWindowViewModel : ViewModelBase
                         typeof(BSL_DeleteAllEntityByName));
                 if (func != null)
                 {
-                    BslErrCode iRes = func(strFileName);
+                    BslErrCode iRes = func(StrFileName);
                     if (iRes == BslErrCode.BSL_ERR_SUCCESS)
                     {
                         // ShowShapeList(strFileName);
                         // PreViewFile(strFileName);
                         Console.WriteLine("clear success");
-                        PreviewFile(strFileName);
+                        PreviewFile(StrFileName);
                     }
                     else
                     {
@@ -324,14 +347,36 @@ public class MainWindowViewModel : ViewModelBase
         AppleUniformTypeIdentifiers = null,
     };
 
-    private async void LoadImage()
+    private void LoadImage()
     {
+        if (DevList.Any() != true)
+        {
+            var box = MessageBoxManager.GetMessageBoxCustom(
+                new MessageBoxCustomParams
+                {
+                    ButtonDefinitions = new List<ButtonDefinition>
+                    {
+                        new() { Name = "Ок" }
+                    },
+                    ContentTitle = "Ошибка",
+                    ContentMessage = "Устройства не найдены",
+                    Icon = Icon.Warning,
+                    CanResize = false,
+                    SizeToContent = SizeToContent.WidthAndHeight,
+                    ShowInCenter = true,
+                    Topmost = true,
+                    WindowStartupLocation = WindowStartupLocation.CenterScreen
+                });
+            box.ShowAsync();
+            return;
+        }
+
         if (m_hMarkDll.hLib != IntPtr.Zero)
         {
             BSL_LoadDataFile func =
                 (BSL_LoadDataFile)m_hMarkDll.GetFunctionAddress("LoadDataFile", typeof(BSL_LoadDataFile));
             {
-                BslErrCode iRes = func(strFileName);
+                BslErrCode iRes = func(StrFileName);
                 if (iRes == BslErrCode.BSL_ERR_SUCCESS)
                 {
                     Console.WriteLine("load empty file");
@@ -341,13 +386,13 @@ public class MainWindowViewModel : ViewModelBase
                 (BSL_AppendFileToDevice)m_hMarkDll.GetFunctionAddress("AppendFileToDevice",
                     typeof(BSL_AppendFileToDevice));
             {
-                BslErrCode iRes = func1(strFileName, DevList[0]);
+                BslErrCode iRes = func1(StrFileName, DevList[0]);
                 if (iRes == BslErrCode.BSL_ERR_SUCCESS)
                 {
                     Console.WriteLine("load file to device");
                 }
             }
-            PreviewFile(strFileName);
+            PreviewFile(StrFileName);
         }
 
         // var topLevel = TopLevel.GetTopLevel(new MainWindow());
@@ -435,9 +480,12 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private void ThreadRedLight(object DevId)
+    private void ThreadRedLight(object? DevId)
     {
         ThreadStopDev();
+        Thread.Sleep(500);
+        RedEnable = false;
+        MarkEnable = false;
         object[] param = (object[])DevId;
         DllInvoke hMarkDll = (DllInvoke)param[0];
         String strDevId = param[1].ToString();
@@ -454,6 +502,7 @@ public class MainWindowViewModel : ViewModelBase
                 Console.WriteLine("Error redlight");
             }
         }
+        
     }
 
     private void ThreadStopDev()
@@ -521,11 +570,15 @@ public class MainWindowViewModel : ViewModelBase
         {
             Console.WriteLine("Пожалуйста, сначала выберите устройство");
         }
+
+        RedEnable = true;
+        MarkEnable = true;
     }
 
     private void ThreadMarkCard(object? obj)
     {
         ThreadStopDev();
+        Thread.Sleep(500);
         object[] param = (object[])obj;
         DllInvoke hMarkDll = (DllInvoke)param[0];
         String strDevId = param[1].ToString();
@@ -534,7 +587,7 @@ public class MainWindowViewModel : ViewModelBase
             (BSL_SetPenParam2)m_hMarkDll.GetFunctionAddress("SetPenParam", typeof(BSL_SetPenParam2));
         if (func_param != null)
         {
-            BslErrCode iRes = func_param(strFileName, 0, 1, MarkSpeed, MarkPower, 1, 30, 1, 10, 0, 100, 50, 80, 4000,
+            BslErrCode iRes = func_param(StrFileName, 0, 1, MarkSpeed, MarkPower, 1, 30, 1, 10, 0, 100, 50, 80, 4000,
                 500, 100,
                 0.5, true, 0, 1);
             if (iRes == BslErrCode.BSL_ERR_SUCCESS)
@@ -546,6 +599,8 @@ public class MainWindowViewModel : ViewModelBase
         DateTime beforDT = System.DateTime.Now;
         BSL_MarkByDeviceId func =
             (BSL_MarkByDeviceId)m_hMarkDll.GetFunctionAddress("MarkByDeviceId", typeof(BSL_MarkByDeviceId));
+        RedEnable = false;
+        MarkEnable = false;
         if (func != null)
         {
             StringBuilder ssID = new StringBuilder(strDevId);
@@ -553,12 +608,14 @@ public class MainWindowViewModel : ViewModelBase
 
             //让标刻按钮可用
             // this.Invoke((EventHandler)delegate { this.button17.Enabled = true; this.m_bStop = true; });
-
+            
             if (iRes == BslErrCode.BSL_ERR_SUCCESS)
             {
                 DateTime afterDT = System.DateTime.Now;
                 TimeSpan ts = afterDT.Subtract(beforDT);
                 Console.WriteLine("success Общее время выполнения {0}ms", ts.TotalMilliseconds);
+                RedEnable = true;
+                MarkEnable = true;
             }
             else
             {
@@ -578,7 +635,7 @@ public class MainWindowViewModel : ViewModelBase
                 Image.Dispose();
             }
 
-            IntPtr hBitmap = func(strFileName, 400, 400, 2, true, true, 10, true);
+            IntPtr hBitmap = func(strFileName, 700, 700, 2, true, true, 10, true);
             if (hBitmap != IntPtr.Zero)
             {
                 try
