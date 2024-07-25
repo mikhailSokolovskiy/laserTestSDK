@@ -49,6 +49,7 @@ public class MainWindowViewModel : ViewModelBase
     public ReactiveCommand<Unit, Unit> RefreshCommand { get; set; }
     public ReactiveCommand<Unit, Unit> CfgCommand { get; set; }
     public ReactiveCommand<Unit, Unit> ClearAllCommand { get; set; }
+    public ReactiveCommand<Unit, Unit> EngineCommand { get; set; }
 
 
     private DllInvoke m_hMarkDll; //markdll对象
@@ -144,9 +145,9 @@ public class MainWindowViewModel : ViewModelBase
         get => _markEnable;
         set => this.RaiseAndSetIfChanged(ref _markEnable, value);
     }
-    
+
     private string StrFileName = "empty.orzx";
-    
+
     public MainWindowViewModel()
     {
         DevList = new List<string>();
@@ -156,7 +157,7 @@ public class MainWindowViewModel : ViewModelBase
 
         LoadPictureCommand = ReactiveCommand.Create(() => { LoadImage(); });
 
-        InsertTextCommand = ReactiveCommand.Create( () =>
+        InsertTextCommand = ReactiveCommand.Create(() =>
         {
             ThreadStopDev();
             Thread.Sleep(500);
@@ -332,6 +333,37 @@ public class MainWindowViewModel : ViewModelBase
                 Console.WriteLine("SDK not found");
             }
         });
+
+        EngineCommand = ReactiveCommand.Create(() =>
+        {
+            if (CurrentDevId >= 0)
+            {
+                if (m_hMarkDll.hLib != IntPtr.Zero)
+                {
+                    // if (!m_bStop)
+                    // {
+                    //     OnBnClickedBtnStop(this, e);
+                    //     Thread.Sleep(500);
+                    // }
+                    // m_bStop = false;
+
+                    //动态偏移、旋转  tbOffsetX
+                    BSL_AxisMoveTo func =
+                        (BSL_AxisMoveTo)m_hMarkDll.GetFunctionAddress("AxisMoveTo",
+                            typeof(BSL_AxisMoveTo));
+                    if (func != null)
+                    {
+                        //double dCenterX = Convert.ToDouble(tbCenterX.Text);
+                        //double dCenterY = Convert.ToDouble(tbCenterY.Text);
+                        //double dOffsetX = Convert.ToDouble(tbOffsetX.Text);
+                        //double dOffsetY = Convert.ToDouble(tbOffsetY.Text);
+                        //double dAngle = Convert.ToDouble(tbRotAngle.Text);
+                        func(DevList[0], 0, 1);
+                        Console.WriteLine("axis working");
+                    }
+                }
+            }
+        });
     }
 
 
@@ -502,7 +534,6 @@ public class MainWindowViewModel : ViewModelBase
                 Console.WriteLine("Error redlight");
             }
         }
-        
     }
 
     private void ThreadStopDev()
@@ -608,7 +639,7 @@ public class MainWindowViewModel : ViewModelBase
 
             //让标刻按钮可用
             // this.Invoke((EventHandler)delegate { this.button17.Enabled = true; this.m_bStop = true; });
-            
+
             if (iRes == BslErrCode.BSL_ERR_SUCCESS)
             {
                 DateTime afterDT = System.DateTime.Now;

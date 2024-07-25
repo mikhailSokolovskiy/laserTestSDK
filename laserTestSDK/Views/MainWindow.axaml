@@ -72,10 +72,11 @@
             <Border Grid.Row="2" Grid.Column="0" BorderBrush="Black" BorderThickness="1" CornerRadius="5" Margin="5">
                 <StackPanel Spacing="5" Margin="5">
                     <Label Content="Маркировка" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <Button Content="Красная обводка" Width="140" Command="{Binding RedLightCommand}" IsEnabled="{Binding RedEnable}"/>
-                    <Button Content="Маркировка" Width="140" Command="{Binding MarkingCommand}" IsEnabled="{Binding MarkEnable}"/>
-                    <Button Content="Стоп" Width="140" Command="{Binding StopMarkingCommand}" />
-                    <Button Content="Конфиг" Width="140" Command="{Binding CfgCommand}" />
+                    <Button Content="Красная обводка" Width="160" Command="{Binding RedLightCommand}" IsEnabled="{Binding RedEnable}"/>
+                    <Button Content="Маркировка" Width="160" Command="{Binding MarkingCommand}" IsEnabled="{Binding MarkEnable}"/>
+                    <Button Content="Стоп" Width="160" Command="{Binding StopMarkingCommand}" />
+                    <Button Content="Конфиг" Width="160" Command="{Binding CfgCommand}" />
+                    <Button Content="Шаговый двигатель" Width="160" Command="{Binding EngineCommand}" />
                 </StackPanel>
             </Border>
         </Grid>
